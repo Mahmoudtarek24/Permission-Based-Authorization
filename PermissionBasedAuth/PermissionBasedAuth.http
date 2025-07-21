@@ -1,0 +1,6 @@
+@PermissionBasedAuth_HostAddress = http://localhost:5100
+
+GET {{PermissionBasedAuth_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
