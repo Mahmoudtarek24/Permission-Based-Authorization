@@ -1,6 +1,11 @@
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PermissionBasedAuth.Context;
+using PermissionBasedAuth.Services.Abstraction;
+using PermissionBasedAuth.Services.Implementation;
+using System.Text;
 
 namespace PermissionBasedAuth
 {
@@ -21,8 +26,31 @@ namespace PermissionBasedAuth
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("PermissionBasedConnection"));
             });
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = false;
+                options.TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ValidIssuer = builder.Configuration["JWTSetting:Issuer"],
+                    ValidAudience = builder.Configuration["JWTSetting:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTSetting:Key"])),
+                    ClockSkew = TimeSpan.Zero,
+                };
+            });
 
-			var app = builder.Build();
+            builder.Services.AddScoped<IPermissionService, PermissionService>();
+            builder.Services.AddScoped<IAuthService,AuthService>();
+            var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

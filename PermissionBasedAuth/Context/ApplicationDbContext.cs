@@ -54,15 +54,16 @@ namespace PermissionBasedAuth.Context
 				entity.HasOne(e => e.User).WithMany(u => u.UserPermissions).HasForeignKey(e => e.UserId);
 				entity.HasOne(e => e.Permission).WithMany(p => p.UserPermissions).HasForeignKey(e => e.PermissionId);
 			});
-
+			SeedData(modelBuilder);
 		}
 		public DbSet<User> Users { get; set; }	
 		public DbSet<Role> Roles { get; set; }	
 		public DbSet<UserRole> UserRoles { get; set; }
 		public DbSet<Permission> Permissions { get; set; }	
 		public DbSet<RolePermission> RolePermissions { get; set; }
+		public DbSet<UserPermission> UserPermissions { get; set; }
 
-		public void SeedPermission(ModelBuilder modelBuilder)
+		public void SeedPermissions(ModelBuilder modelBuilder)
 		{
 			var Permissions=new List<Permission>();
 			var Id = 1;
@@ -92,14 +93,26 @@ namespace PermissionBasedAuth.Context
 					Module = module,
 					Name = name,
 					IsSystemPermission = true
-
 				});
 			}
 
 			var businessModules = new[] { "Categories", "Products", "Orders", "Suppliers", "Reports", "Settings" };
 			var actions = new[] { "create", "read", "update", "delete" };
 
-
+			foreach (var module in businessModules)
+			{
+				foreach (var action in actions)
+				{
+					Permissions.Add(new Permission {
+						Id = Id++,
+						Name = $"{module}.{action}",
+						Module = module,
+						Action = action,
+						IsSystemPermission = false
+					});
+				}
+			}
+			modelBuilder.Entity<Permission>().HasData(Permissions);
 		}
 		private void SeedRoles(ModelBuilder modelBuilder)
 		{
@@ -126,6 +139,21 @@ namespace PermissionBasedAuth.Context
 		{
 			modelBuilder.Entity<UserRole>().HasData(new UserRole { UserId = 1, RoleId = 1 });
 		}
+		private void SeedRolePermissions(ModelBuilder modelBuilder)
+		{
+			var superAdminPermissions = new List<RolePermission>();
+			for (int i = 1; i <= 13; i++)
+				superAdminPermissions.Add(new RolePermission { RoleId = 1, PermissionId = i });
 
+			modelBuilder.Entity<RolePermission>().HasData(superAdminPermissions);
+		}
+		private void SeedData(ModelBuilder modelBuilder)
+		{
+			SeedPermissions(modelBuilder);
+			SeedRoles(modelBuilder);
+			SeedUsers(modelBuilder);
+			SeedUserRoles(modelBuilder);
+			SeedRolePermissions(modelBuilder);
+		}
 	}
 }
