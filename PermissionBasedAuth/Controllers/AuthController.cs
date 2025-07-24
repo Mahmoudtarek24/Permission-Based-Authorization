@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PermissionBasedAuth.Dto_s;
 using PermissionBasedAuth.Services.Abstraction;
 using PermissionBasedAuth.Services.Implementation;
+using System.Security.Claims;
 
 namespace PermissionBasedAuth.Controllers
 {
@@ -11,9 +13,11 @@ namespace PermissionBasedAuth.Controllers
 	public class AuthController : ControllerBase
 	{
 		private readonly IAuthService authService;
-		public AuthController(IAuthService authService)
+		private readonly IPermissionService permissionService;
+		public AuthController(IAuthService authService,IPermissionService permissionService)
 		{
 			this.authService = authService;		
+			this.permissionService = permissionService;
 		}
 		[HttpPost("login")]
 		public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDto loginDto)
@@ -27,6 +31,7 @@ namespace PermissionBasedAuth.Controllers
 		}
 		
 		[HttpPost("register")]
+		[Authorize(AuthenticationSchemes ="Bearer",Roles = "SuperAdmin")]
 		public async Task<ActionResult<UserWithRolesDto>> Register([FromBody] CreateUserDto dto)
 		{
 			var user = await authService.CreateUserAsync(dto);
@@ -43,10 +48,17 @@ namespace PermissionBasedAuth.Controllers
 			return Ok(userWithRoles);	
 		}
 		[HttpGet("profile")]
+		[Authorize]
 		public async Task<ActionResult<UserWithRolesDto>> GetProfile()
 		{
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-			return Ok();
+			var userProfile = await permissionService.GetUserWithRolesAndPermissionsAsync(int.Parse(userId));
+
+			if (userProfile == null)
+				return NotFound("User not exist");
+
+			return Ok(userProfile);
 		}
 
 	}

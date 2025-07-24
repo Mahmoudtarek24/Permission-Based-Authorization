@@ -62,7 +62,7 @@ namespace PermissionBasedAuth.Services.Implementation
 		public async Task<LoginResponseDto?> LoginAsync(LoginDto dto)
 		{
 			var user = await context.Users.Include(e => e.UserRoles).ThenInclude(e => e.Role)
-		   .FirstOrDefaultAsync(e => e.Username == dto.Username && e.PasswordHash == dto.Password);
+		                       .FirstOrDefaultAsync(e => e.Username == dto.Username && e.PasswordHash == dto.Password);
 
 			if (user is null)
 				return null;
